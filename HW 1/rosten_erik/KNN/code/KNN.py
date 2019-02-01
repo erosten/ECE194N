@@ -59,11 +59,50 @@ def compute_dists(train_images, test_images):
 			dists[i,j] = np.linalg.norm(X_train[j,:]-X[i,:])
 	return dists
 
-def compute_nearest_neighbors(k, dists):
+def compute_nearest_neighbors(k, dists, train_cls):
 	nearest_neighbors = np.zeros((dists.shape[0],k))
-	print('Finding Indices')
-	idx = np.argpartition(dists, k, axis = 0)
-	return dists[idx]
+	nearest_neighbor_classes = np.zeros((dists.shape[0],k))
+	for i in range(dists.shape[0]):
+		idx = np.argpartition(dists[i,:], k, axis = 0)[:k]
+		nearest_neighbors[i,:] = dists[i,idx]
+		nearest_neighbor_classes[i,:] = train_cls[idx]
+	return nearest_neighbors, nearest_neighbor_classes
+
+def compute_error_rate(nn, test_cls , nn_cls):
+	acc_count = 0
+	total_test_images = nn.shape[0]
+	k = nn.shape[1]
+	nn.astype(int)
+	nn_cls.astype(int)
+	# if k is even
+	# if (k % 2 == 0 ):
+	for i in range(total_test_images):
+		unique_labels = np.unique(nn_cls[i])
+		label_count = 0
+		label = 5
+		for j in range(unique_labels.shape[0]):
+			num_occurences = np.count_nonzero(nn_cls[i] == unique_labels[j])
+			if (num_occurences > label_count):
+				label_count = num_occurences
+				label = unique_labels[j]
+			elif(num_occurences == label_count):
+				# print('Unique Labels: {}'.format(unique_labels))
+				# print('Num Occurences of {} is {}'.format(unique_labels[j], num_occurences))
+				ind1 = np.where(nn_cls[i] == unique_labels[j])
+				ind2 = np.where(nn_cls[i] == label)
+				avg1 = np.average(nn[i,ind1])
+				avg2 = np.average(nn[i,ind2])
+				# print(ind1)
+				# print(ind2)
+				# print(avg1)
+				# print(avg2)
+				if (avg1 < avg2):
+					label = unique_labels[j]
+				# print(label)
+		if (test_cls[i] != np.int(label)):
+			acc_count = acc_count + 1
+
+	return acc_count / total_test_images	
 
 
 train_images, train_cls, train_names = cifar_loader.load_training_data()
@@ -92,8 +131,11 @@ test_images = rgb2gray(test_images)
 # 10000 x 20000
 dists = np.load('dists.npy')
 print('Saved distances loaded.')
-nn = compute_nearest_neighbors(1,dists)
-print(nn.shape)
+k_array = np.array([1, 2, 4, 5, 9, 10, 19, 20])
+for k in range(k_array.shape[0]):
+	nn, nn_cls = compute_nearest_neighbors(k_array[k], dists, train_cls)
+	e_rate = compute_error_rate(nn, test_cls, nn_cls)
+	print('Error rate for k = {} is {}'.format(k_array[k], e_rate))
 # nn2 = compute_nearest_neighbors(3,dists)
 # print(nn2.shape)
 
