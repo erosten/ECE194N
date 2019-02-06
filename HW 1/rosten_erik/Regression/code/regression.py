@@ -39,8 +39,6 @@ def gradientDescent(train_X, train_y, weights, alpha, num_iters):
 	numInstances = train_X.shape[0]
 	losses = np.zeros((num_iters,))
 	for i in range(num_iters):
-		# inverse = np.linalg.inv(np.matmul(np.transpose(train_X),train_X))
-		# grad = np.matmul(np.transpose(train_y), np.matmul(train_X, inverse))
 		grad = np.matmul(np.transpose(train_X), np.matmul(train_X,weights) - train_y)
 		weights = weights - (alpha / numInstances) * grad
 		loss = compute_loss(train_X, train_y, weights)
@@ -66,9 +64,8 @@ def print_results(test_X, weights, test_y):
 	print('Weights are {}'.format(weights))
 	for i in range(test_X.shape[0]):
 		print('Predicted Value: {}, Actual Value: {}'.format(predicted_y[i], test_y[i]))
-	coeff = 1 / (2 * test_X.shape[0])
-	loss = np.sum((predicted_y - test_y)**2)
-	totalMSE = coeff * loss
+
+	totalMSE = compute_loss(test_X,test_y,weights)		
 	print('Total Mean Squared Error: {}'.format(totalMSE))
 
 def append_ones(X):
@@ -87,7 +84,7 @@ def run_regression():
 	train_X = normalize_features(train_X)
 	train_X = append_ones(train_X)
 	weights, losses = gradientDescent(train_X, train_y, weights, learning_rate, num_iter)
-	# view loss and test results
+	# view loss and test set results
 	plotLoss(losses)
 	test_X = normalize_features(test_X)
 	test_X = append_ones(test_X)
