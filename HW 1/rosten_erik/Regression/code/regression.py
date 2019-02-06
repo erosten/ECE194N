@@ -71,7 +71,7 @@ def print_results(test_X, weights, test_y):
 	totalMSE = coeff * loss
 	print('Total Mean Squared Error: {}'.format(totalMSE))
 
-def append_zeros(X):
+def append_ones(X):
 	ones = np.ones((X.shape[0],1))
 	return np.concatenate((ones,X), axis = 1)
 
@@ -85,13 +85,12 @@ def run_regression():
 	learning_rate = 0.01
 	num_iter = 1000
 	train_X = normalize_features(train_X)
-	print(train_X)
-	train_X = append_zeros(train_X)
+	train_X = append_ones(train_X)
 	weights, losses = gradientDescent(train_X, train_y, weights, learning_rate, num_iter)
 	# view loss and test results
 	plotLoss(losses)
 	test_X = normalize_features(test_X)
-	test_X = append_zeros(test_X)
+	test_X = append_ones(test_X)
 	print_results(test_X, weights, test_y)
 
 
