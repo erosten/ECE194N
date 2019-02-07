@@ -57,20 +57,26 @@ with tf.Session() as sess:
 
 
     print("Optimization Finished!")
-    print ("Final Accuracy:", accuracy.eval({x: mnist.test.images[:3000], y: mnist.test.labels[:3000]}))
-    is_correct = correct_prediction.eval({x: mnist.test.images[:3000], y: mnist.test.labels[:3000]})
-
+    print ("Final Accuracy:", accuracy.eval({x: mnist.test.images, y: mnist.test.labels}))
+    is_correct = correct_prediction.eval({x: mnist.test.images, y: mnist.test.labels})
     false_indices = np.where(is_correct == False)[0]
-    bad_images = mnist.test.images[:3000][false_indices]
-    bad_image_labels = mnist.test.labels[:3000][false_indices]
+    bad_images = mnist.test.images[false_indices]
+    bad_image_labels = mnist.test.labels[false_indices]
 
-    for j in range(0,false_indices.shape[0]):
-        false_index = false_indices[j]
-        img = bad_images[j].reshape(28,28)
-        correct_label = np.nonzero(bad_image_labels[j,:])[0]
-        predicted_label = my_prediction.eval({x: bad_images[j].reshape(1,784)})
-        imgplot = plt.imshow(img, cmap='gray')
-        plt.title('Correct Label: {}, Predicted Label: {}'.format(correct_label, predicted_label))
+    for i in range(0,10):
+        bad_image_counter = 0
+        fig = plt.figure(1)
+        for j in range(0, false_indices.shape[0]):
+            false_index = false_indices[j]
+            img = bad_images[j].reshape(28,28)
+            correct_label = np.nonzero(bad_image_labels[j,:])[0]
+            if (correct_label == i and bad_image_counter < 10):
+                ax = plt.subplot(2,5,bad_image_counter + 1)
+                ax.axis('off')
+                imgplot = plt.imshow(img, cmap='gray')
+                predicted_label = my_prediction.eval({x: bad_images[j].reshape(1,784)})
+                fig.suptitle('Correct Label: {}'.format(correct_label))
+                ax.set_title('Predicted Label: {}'.format(predicted_label), size=6)
+                bad_image_counter += 1
+        fig.tight_layout()
         plt.show()
-
-
