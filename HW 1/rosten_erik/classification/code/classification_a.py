@@ -36,7 +36,6 @@ test_accs = np.zeros((training_epochs,))
 train_accs = np.zeros((training_epochs,))
 with tf.Session() as sess:
     sess.run(init)
-
     # Training cycle
     for epoch in range(training_epochs):
         avg_cost = 0.
@@ -56,14 +55,14 @@ with tf.Session() as sess:
         if (epoch+1) % display_step == 0:
             print("Epoch:", '%04d' % (epoch+1), "cost=", "{:.9f}".format(avg_cost))
             test_acc = accuracy.eval({x: mnist.test.images[:3000], y: mnist.test.labels[:3000]})
-            train_acc = accuracy.eval({x:batch_xs, y: batch_ys})
+            train_acc = accuracy.eval({x: mnist.train.images, y: mnist.train.labels})
             test_accs[epoch] = test_acc
             train_accs[epoch] = train_acc
             print ("\tTest Accuracy:", test_acc)
             print("\tTrain Accuracy:", train_acc)
 
     print("Optimization Finished!")
-    print ("Final Accuracy:", accuracy.eval({x: mnist.test.images[:3000], y: mnist.test.labels[:3000]}))
+    print ("Final Test Accuracy:", accuracy.eval({x: mnist.test.images[:3000], y: mnist.test.labels[:3000]}))
 
 fig, axes = plt.subplots(nrows=2)
 x = range(training_epochs)
@@ -71,4 +70,5 @@ axes[0].scatter(x, train_accs, marker = "o", color = "r")
 axes[1].scatter(x, test_accs, marker = "x", color = "k")
 axes[0].set(xlabel = "Epoch", ylabel = "Training Accuracy (%)")
 axes[1].set(xlabel = "Epoch", ylabel = "Test Accuracy (%)")
+fig.tight_layout()
 plt.show()
