@@ -79,8 +79,8 @@ def run_regression():
 	visualize_data(data)	
 	# train the weights
 	weights = np.zeros((3,1))
-	learning_rate = 0.01
-	num_iter = 1000
+	learning_rate = 0.0001
+	num_iter = 2500000
 	train_X = normalize_features(train_X)
 	train_X = append_ones(train_X)
 	weights, losses = gradientDescent(train_X, train_y, weights, learning_rate, num_iter)
