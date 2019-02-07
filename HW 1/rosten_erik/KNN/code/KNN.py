@@ -1,14 +1,15 @@
 import numpy as np
 import cifar_loader
 import matplotlib.pyplot as plt
+import os
 
 
 
-def split_sets(all_train_images, all_train_classes, class_numbers):
+def split_sets(all_train_images, all_train_classes, labels_to_keep):
 	images = []
 	classes = []
-	for i in range(class_numbers.shape[0]):
-		indices = np.where(all_train_classes == class_numbers[i])[0]
+	for i in range(labels_to_keep.shape[0]):
+		indices = np.where(all_train_classes == labels_to_keep[i])[0]
 		images.append(all_train_images[indices])
 		classes.append(all_train_classes[indices])
 
@@ -22,11 +23,9 @@ def split_class_names(all_class_names, class_numbers):
 	class_names = []
 	for i in range(class_numbers.shape[0]):
 		class_names.append(all_class_names[class_numbers[i]])
+	return np.array(class_names)
 
-	class_names = np.array(class_names)
-	return class_names
-
-def find_examples(train_imgs, train_cls, labels_to_keep, class_names):
+def view_examples(train_imgs, train_cls, labels_to_keep, class_names):
 	print(class_names)
 	for i in range(labels_to_keep.shape[0]):
 		label_class_name = class_names[i]
@@ -38,27 +37,37 @@ def find_examples(train_imgs, train_cls, labels_to_keep, class_names):
 		plt.title('{} Example'.format(label_class_name))
 		plt.show()
 
-def rgb2gray(rgb_imgs):
+
+def rgb2gray_average(rgb_imgs):
 	gray_imgs = np.zeros((rgb_imgs.shape[0],32,32))
 	for i in range(rgb_imgs.shape[0]):
 		r, g, b = rgb_imgs[i,:,:,0], rgb_imgs[i,:,:,1], rgb_imgs[i,:,:,2]
 		gray_imgs[i,:,:] = (r + g + b) / 3
 	return gray_imgs
 
+def rgb2gray_luminosity(rgb_imgs):
+	gray_imgs = np.zeros((rgb_imgs.shape[0],32,32))
+	for i in range(rgb_imgs.shape[0]):
+		r, g, b = rgb_imgs[i,:,:,0], rgb_imgs[i,:,:,1], rgb_imgs[i,:,:,2]
+		gray_imgs[i,:,:] = 0.21 * r + 0.72 * g + 0.07 * b
+	return gray_imgs
 
+def euclidean_dist(img1, img2):
+	return np.linalg.norm(img1-img2)
+
+def ssd(img1, img2):
+	return np.sum((img1-img2)**2)
 
 def compute_dists(train_imgs, test_imgs):
-	X = test_imgs
-	X_train = train_imgs
-	num_test = X.shape[0]
-	num_train = X_train.shape[0]
+	num_test = test_imgs.shape[0]
+	num_train = train_imgs.shape[0]
 	dists = np.zeros((num_test, num_train))
 	for i in range(num_test):
 		for j in range(num_train):
-			dists[i,j] = np.linalg.norm(X_train[j,:]-X[i,:])
+			dists[i,j] = ssd(train_imgs[j,:], test_imgs[i,:])
 	return dists
 
-def compute_nearest_neighbors(k, dists, train_cls):
+def find_nearest_neighbors(k, dists, train_cls):
 	nearest_neighbors = np.zeros((dists.shape[0],k))
 	nearest_neighbor_classes = np.zeros((dists.shape[0],k))
 	nearest_neighbor_class_indices = np.zeros((dists.shape[0],k))
@@ -79,26 +88,20 @@ def compute_error_rate(nn, test_cls , nn_cls):
 	for i in range(total_test_imgs):
 		unique_labels = np.unique(nn_cls[i])
 		label_count = 0
-		label = 5
+		label = np.max(unique_labels) + 1
 		for j in range(unique_labels.shape[0]):
 			num_occurences = np.count_nonzero(nn_cls[i] == unique_labels[j])
 			if (num_occurences > label_count):
 				label_count = num_occurences
 				label = unique_labels[j]
 			elif(num_occurences == label_count):
-				# print('Unique Labels: {}'.format(unique_labels))
-				# print('Num Occurences of {} is {}'.format(unique_labels[j], num_occurences))
-				ind1 = np.where(nn_cls[i] == unique_labels[j])
-				ind2 = np.where(nn_cls[i] == label)
-				avg1 = np.average(nn[i,ind1])
-				avg2 = np.average(nn[i,ind2])
-				# print(ind1)
-				# print(ind2)
-				# print(avg1)
-				# print(avg2)
-				if (avg1 < avg2):
+				new_indices = np.where(nn_cls[i] == unique_labels[j])[0]
+				old_indices = np.where(nn_cls[i] == label)[0]
+				new_avg = np.average(nn[i,new_indices])
+				old_avg = np.average(nn[i,old_indices])
+				if (new_avg < old_avg):
 					label = unique_labels[j]
-				# print(label)
+
 		if (test_cls[i] != np.int(label)):
 			acc_count = acc_count + 1
 
@@ -108,7 +111,7 @@ def plot_nearest_neighbors(labels_to_keep, dists, train_cls, test_cls, test_imgs
 
 	for i in range(labels_to_keep.shape[0]):
 		label = labels_to_keep[i]
-		nn, nn_cls, nn_cls_indices = compute_nearest_neighbors(5, dists, train_cls)
+		nn, nn_cls, nn_cls_indices = find_nearest_neighbors(5, dists, train_cls)
 		label_indices = np.where(test_cls == label)[0]
 		ind = np.random.randint(0, label_indices.shape[0] - 1)
 		label_index = label_indices[ind].astype(int)
@@ -119,15 +122,14 @@ def plot_nearest_neighbors(labels_to_keep, dists, train_cls, test_cls, test_imgs
 		plt.figure(1)
 		ax1 = plt.subplot(2,3,1)
 		ax1.axis('off')
-		imgplt1 = plt.imshow(test_imgs[label_index], cmap='gray')
+		imgplt1 = plt.imshow(test_imgs[label_index])
 		ax1.set_title('Test Image ({})'.format(class_names[i]), size=10)
 
 		for j in range(5):
-
 			ax2 = plt.subplot(2,3,(j+2))
 			ax2.axis('off')
 			nn_class = class_names[np.where(labels_to_keep == nn_cls[j])[0][0]]
-			imgplt2 = plt.imshow(train_imgs[nn_img_indices[j]], cmap='gray')
+			imgplt2 = plt.imshow(train_imgs[nn_img_indices[j]])
 			ax2.set_title('NN: {} , dist: {:0.2f}, class: {}'.format(j+1, nn[j] ,nn_class), size=7)
 
 		plt.show()
@@ -135,7 +137,7 @@ def plot_nearest_neighbors(labels_to_keep, dists, train_cls, test_cls, test_imgs
 def plot_k_error_rates(k_array, dists, train_cls, test_cls):
 	e_rates = np.zeros(k_array.shape)
 	for k in range(k_array.shape[0]):
-		nn, nn_cls, _ = compute_nearest_neighbors(k_array[k], dists, train_cls)
+		nn, nn_cls, _ = find_nearest_neighbors(k_array[k], dists, train_cls)
 		e_rate = compute_error_rate(nn, test_cls, nn_cls)
 		e_rates[k] = e_rate
 		print('Error rate for k = {} is {}'.format(k_array[k], e_rate))
@@ -144,6 +146,20 @@ def plot_k_error_rates(k_array, dists, train_cls, test_cls):
 	plt.ylabel('Error Rates')
 	plt.xlabel('K')
 	plt.show()
+
+def get_dists(filename, train_imgs, test_imgs):
+	# size of dists is 4000 x 10000
+	if (os.path.isfile(filename)):
+		dists = np.load(filename)
+		print('Precalculated distances loaded.')
+	else:
+		print('Calculating distances')
+		dists = compute_dists(train_imgs, test_imgs)
+		print('Saving distances')
+		np.save(filename, dists)
+		print('Distances saved')
+	return dists
+
 
 def run_KNN():
 
@@ -158,25 +174,22 @@ def run_KNN():
 	test_imgs, test_cls = split_sets(test_imgs, test_cls, labels_to_keep)
 	class_names = split_class_names(class_names, labels_to_keep)
 
-
 	# part a
-	find_examples(train_imgs, train_cls, labels_to_keep, class_names)
+	# view_examples(train_imgs, train_cls, labels_to_keep, class_names)
 
 	# part b and c
-	train_imgs = rgb2gray(train_imgs)
-	test_imgs = rgb2gray(test_imgs)
+	train_imgs_gray = rgb2gray_average(train_imgs)
+	test_imgs_gray = rgb2gray_average(test_imgs)
+	dists = get_dists('dists_gray2.npy',train_imgs_gray, test_imgs_gray)
 
-	# dists = compute_dists(train_imgs, test_imgs)
-	# np.save('dists.npy',dists)
-	# 4000 x 20000
-	dists = np.load('dists.npy')
-	print('Saved distances loaded.')
-	k_array = np.array([1, 2, 5, 10, 20])
+
+
+	k_array = np.array([1,2,5,10,20])
 	plot_k_error_rates(k_array, dists, train_cls, test_cls)
 
 
 	# part d
-	plot_nearest_neighbors(labels_to_keep, dists, train_cls, test_cls, test_imgs, train_imgs, class_names)	
+	# plot_nearest_neighbors(labels_to_keep, dists, train_cls, test_cls, test_imgs, train_imgs, class_names)	
 
 
 
