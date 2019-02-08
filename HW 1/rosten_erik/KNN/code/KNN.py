@@ -30,7 +30,7 @@ def view_examples(train_imgs, train_cls, labels_to_keep, class_names):
 	for i in range(labels_to_keep.shape[0]):
 		label_class_name = class_names[i]
 		rand_integer = np.random.randint(0,4999)
-		# grab an example index
+		# grab a random example index
 		index = np.where(train_cls == labels_to_keep[i])[0][rand_integer]
 		img_example = train_imgs[index]
 		imgplot = plt.imshow(img_example)
@@ -76,14 +76,12 @@ def find_nearest_neighbors(k, dists, train_cls):
 		nearest_neighbors[i,:] = dists[i,idx]
 		nearest_neighbor_classes[i,:] = train_cls[idx]
 		nearest_neighbor_class_indices[i,:] = idx
-	return nearest_neighbors, nearest_neighbor_classes, nearest_neighbor_class_indices
+	return nearest_neighbors, nearest_neighbor_classes.astype(int), nearest_neighbor_class_indices.astype(int)
 
 def compute_error_rate(nn, test_cls , nn_cls):
 	acc_count = 0
 	total_test_imgs = nn.shape[0]
 	k = nn.shape[1]
-	nn.astype(int)
-	nn_cls.astype(int)
 
 	for i in range(total_test_imgs):
 		unique_labels = np.unique(nn_cls[i])
@@ -114,8 +112,8 @@ def plot_nearest_neighbors(labels_to_keep, dists, train_cls, test_cls, test_imgs
 		nn, nn_cls, nn_cls_indices = find_nearest_neighbors(5, dists, train_cls)
 		label_indices = np.where(test_cls == label)[0]
 		ind = np.random.randint(0, label_indices.shape[0] - 1)
-		label_index = label_indices[ind].astype(int)
-		nn_img_indices = nn_cls_indices[label_index,:].astype(int)
+		label_index = label_indices[ind]
+		nn_img_indices = nn_cls_indices[label_index,:]
 		nn_cls = nn_cls[label_index]
 		nn = nn[label_index]
 
@@ -178,9 +176,9 @@ def run_KNN():
 	# view_examples(train_imgs, train_cls, labels_to_keep, class_names)
 
 	# part b and c
-	train_imgs_gray = rgb2gray_average(train_imgs)
-	test_imgs_gray = rgb2gray_average(test_imgs)
-	dists = get_dists('dists_gray2.npy',train_imgs_gray, test_imgs_gray)
+	train_imgs_gray = rgb2gray_luminosity(train_imgs)
+	test_imgs_gray = rgb2gray_luminosity(test_imgs)
+	dists = get_dists('dists_lum_ssd.npy',train_imgs_gray, test_imgs_gray)
 
 
 
