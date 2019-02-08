@@ -5,13 +5,13 @@ import os
 
 
 
-def split_sets(all_train_images, all_train_classes, labels_to_keep):
+def split_sets(all_images, all_classes, labels_to_keep):
 	images = []
 	classes = []
 	for i in range(labels_to_keep.shape[0]):
-		indices = np.where(all_train_classes == labels_to_keep[i])[0]
-		images.append(all_train_images[indices])
-		classes.append(all_train_classes[indices])
+		indices = np.where(all_classes == labels_to_keep[i])[0]
+		images.append(all_images[indices])
+		classes.append(all_classes[indices])
 
 	images = np.array(images)
 	images = images.reshape([-1,32,32,3])
@@ -68,15 +68,15 @@ def compute_dists(train_imgs, test_imgs):
 	return dists
 
 def find_nearest_neighbors(k, dists, train_cls):
-	nearest_neighbors = np.zeros((dists.shape[0],k))
-	nearest_neighbor_classes = np.zeros((dists.shape[0],k))
-	nearest_neighbor_class_indices = np.zeros((dists.shape[0],k))
+	nn_distances = np.zeros((dists.shape[0],k))
+	nn_classes = np.zeros((dists.shape[0],k))
+	nn_classes_indices = np.zeros((dists.shape[0],k))
 	for i in range(dists.shape[0]):
 		idx = np.argpartition(dists[i,:], k, axis = 0)[:k]
-		nearest_neighbors[i,:] = dists[i,idx]
-		nearest_neighbor_classes[i,:] = train_cls[idx]
-		nearest_neighbor_class_indices[i,:] = idx
-	return nearest_neighbors, nearest_neighbor_classes.astype(int), nearest_neighbor_class_indices.astype(int)
+		nn_distances[i,:] = dists[i,idx]
+		nn_classes[i,:] = train_cls[idx]
+		nn_classes_indices[i,:] = idx
+	return nn_distances, nn_classes.astype(int), nn_classes_indices.astype(int)
 
 def compute_error_rate(nn, test_cls , nn_cls):
 	acc_count = 0
@@ -100,7 +100,7 @@ def compute_error_rate(nn, test_cls , nn_cls):
 				if (new_avg < old_avg):
 					label = unique_labels[j]
 
-		if (test_cls[i] != np.int(label)):
+		if (test_cls[i] != label):
 			acc_count = acc_count + 1
 
 	return acc_count / total_test_imgs	
@@ -109,13 +109,13 @@ def plot_nearest_neighbors(labels_to_keep, dists, train_cls, test_cls, test_imgs
 
 	for i in range(labels_to_keep.shape[0]):
 		label = labels_to_keep[i]
-		nn, nn_cls, nn_cls_indices = find_nearest_neighbors(5, dists, train_cls)
+		nn_dists, nn_cls, nn_cls_indices = find_nearest_neighbors(5, dists, train_cls)
 		label_indices = np.where(test_cls == label)[0]
 		ind = np.random.randint(0, label_indices.shape[0] - 1)
 		label_index = label_indices[ind]
 		nn_img_indices = nn_cls_indices[label_index,:]
 		nn_cls = nn_cls[label_index]
-		nn = nn[label_index]
+		nn_dists = nn_dists[label_index]
 
 		plt.figure(1)
 		ax1 = plt.subplot(2,3,1)
@@ -128,7 +128,7 @@ def plot_nearest_neighbors(labels_to_keep, dists, train_cls, test_cls, test_imgs
 			ax2.axis('off')
 			nn_class = class_names[np.where(labels_to_keep == nn_cls[j])[0][0]]
 			imgplt2 = plt.imshow(train_imgs[nn_img_indices[j]])
-			ax2.set_title('NN: {} , dist: {:0.2f}, class: {}'.format(j+1, nn[j] ,nn_class), size=7)
+			ax2.set_title('NN: {} , dist: {:0.2f}, class: {}'.format(j+1, nn_dists[j] ,nn_class), size=7)
 
 		plt.show()
 
