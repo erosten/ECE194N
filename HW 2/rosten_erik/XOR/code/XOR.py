@@ -73,14 +73,15 @@ class neural_net:
 
     def forward_pass(self, input = None):
         input = input if input is not None else self.input
-
-        self.hidden_layer = sigmoid(np.dot(input, self.w1))
-        self.output = sigmoid(np.dot(self.hidden_layer, self.w2))
+        self.in_h_layer = np.dot(input,self.w1)
+        self.hidden_layer = sigmoid(self.in_h_layer)
+        self.in_output = np.dot(self.hidden_layer, self.w2)
+        self.output = sigmoid(self.in_output)
 
     def back_prop(self, alpha):
-        delta_0 = (self.output - self.y) * sigmoid_derivative(self.output)
+        delta_0 = (self.output - self.y) * sigmoid_derivative(self.in_output)
         d_w2 = np.dot(self.hidden_layer.T, delta_0)
-        d_w1 = np.dot(self.input.T,  (np.dot(delta_0, self.w2.T) * sigmoid_derivative(self.hidden_layer)))
+        d_w1 = np.dot(self.input.T,  (np.dot(delta_0, self.w2.T) * sigmoid_derivative(self.in_h_layer)))
 
         self.w1 -= alpha * d_w1
         self.w2 -= alpha * d_w2
@@ -108,15 +109,16 @@ def run_neural_net():
         loss[i] = nn.loss()
 
     y_pred = map_nn_output(nn.output)
-    print(nn.w1.shape)
-    print(nn.w1)
-    print(nn.w2.shape)
-    print(nn.w2)
-    visualize_classification_regions(x,y, nn)
-    plt.plot(np.arange(num_iter), loss, linestyle = '--', marker = 'o', color = 'b')
-    plt.xlabel('Iterations')
-    plt.ylabel('Squared Error Loss')
-    plt.show()
+    print(y_pred)
+    # print(nn.w1.shape)
+    # print(nn.w1)
+    # print(nn.w2.shape)
+    # print(nn.w2)
+    # visualize_classification_regions(x,y, nn)
+    # plt.plot(np.arange(num_iter), loss, linestyle = '--', marker = 'o', color = 'b')
+    # plt.xlabel('Iterations')
+    # plt.ylabel('Squared Error Loss')
+    # plt.show()
 
 
 if __name__ == "__main__":
