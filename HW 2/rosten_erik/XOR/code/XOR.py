@@ -35,10 +35,10 @@ def visualize_classification_regions(x,y, nn):
     plt.plot(x, y)
     y = -(nn.w1[0,1] / nn.w1[1,1]) * x
     plt.plot(x,y)
-    y = -(nn.w1[0,2] / nn.w1[1,2]) * x
+    y = -(nn.w2[0] / nn.w2[1]) * x
     plt.plot(x,y)
-    plt.xlim((-0.1,1.1))
-    plt.ylim((-0.1,1.1))
+    # plt.xlim((-0.1,1.1))
+    # plt.ylim((-0.1,1.1))
 
     plt.show()
 
@@ -54,6 +54,12 @@ def sigmoid_derivative(x):
 def loss(y_pred, y):
     return .5 * np.sum((y_pred - y)**2)
 
+def plot_loss(loss):
+    plt.plot(np.arange(loss.shape[0]), loss, linestyle = '--', marker = 'o', color = 'b')
+    plt.xlabel('Iterations')
+    plt.ylabel('Squared Error Loss')
+    plt.show()
+
 
 # 0 -> 1
 # 1 -> -1
@@ -64,7 +70,7 @@ def map_nn_output(y):
 class neural_net:
     def __init__(self, x, y):
         self.input = x
-        self.num_hidden_layer_perceptrons = 3
+        self.num_hidden_layer_perceptrons = 2
         # random returns random values between 0 and 1 in a given shape
         self.w1 = np.random.rand(self.input.shape[1],self.num_hidden_layer_perceptrons) 
         self.w2 = np.random.rand(self.num_hidden_layer_perceptrons,1)               
@@ -86,39 +92,41 @@ class neural_net:
         self.w1 -= alpha * d_w1
         self.w2 -= alpha * d_w2
 
+    def train(self, num_iter, alpha):
+        self.loss = np.zeros(num_iter)
+        for i in range(num_iter):
+            self.forward_pass()
+            self.back_prop(alpha)
+            self.loss[i] = loss(self.output,self.y)
 
     def loss(self):
         return loss(self.output, self.y)
 
 
 def run_neural_net():
+    # define neural net inputs
     x = np.array([[1,1],
                   [0,0],
                   [1,0],
                   [0,1]])
 
     y = np.array([[0],[0],[1],[1]])
+    # define neural net
     nn = neural_net(x,y)
-
+    # define neural net training inputs
     num_iter = 100000
-    alpha = 0.1
-    loss = np.zeros(num_iter)
-    for i in range(num_iter):
-        nn.forward_pass()
-        nn.back_prop(alpha)
-        loss[i] = nn.loss()
-
+    alpha = 1
+    # train the net
+    nn.train(num_iter, alpha)
+    # map outputs from 0 -> 1 and 1 -> -1
     y_pred = map_nn_output(nn.output)
+    # print predictions
     print(y_pred)
-    # print(nn.w1.shape)
-    # print(nn.w1)
-    # print(nn.w2.shape)
-    # print(nn.w2)
-    # visualize_classification_regions(x,y, nn)
-    # plt.plot(np.arange(num_iter), loss, linestyle = '--', marker = 'o', color = 'b')
-    # plt.xlabel('Iterations')
-    # plt.ylabel('Squared Error Loss')
-    # plt.show()
+    # plot loss
+    plot_loss(nn.loss)
+    # visualize classification regions
+    visualize_classification_regions(x,y, nn)
+
 
 
 if __name__ == "__main__":
