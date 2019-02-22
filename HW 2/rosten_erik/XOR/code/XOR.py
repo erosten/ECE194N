@@ -19,27 +19,30 @@ def visualize_samples(x,y):
     plt.show()
 
 def visualize_classification_regions(x,y, nn):
-    plt.style.use('ggplot')
+    points = []
+    classes = []
+    for i in range(10000):
+        point = np.random.rand(1,2)
+        points.append(point)
+        network_output = nn.forward_pass(point)
+        classes.append(map_nn_output(network_output))
+
+    points = np.array(points).reshape(-1,2)
+    classes = np.array(classes).reshape(-1,)
+    color = ['red' if label == -1 else 'blue' for label in classes]
+    plt.scatter(points[:,0], points[:,1], color=color, s = 5)
+
+
     plt.scatter(x[:,0], x[:,1])
 
     for i, label in enumerate(y.tolist()):
         plt.annotate(label, (x[i,0], x[i,1]))
     plt.xlabel('Input 1')
     plt.ylabel('Input 2')
-    plt.title('XOR of Input 1 and Input 2 and it\'s Annotated Output')
- 
-    w1 = nn.w1[0,0]
-    w2 = nn.w1[1,0]
-    x = np.arange(0,1,0.01).reshape(-1,1)
-    y = -(w2 / w1) * x
-    plt.plot(x, y)
-    y = -(nn.w1[0,1] / nn.w1[1,1]) * x
-    plt.plot(x,y)
-    y = -(nn.w2[0] / nn.w2[1]) * x
-    plt.plot(x,y)
-    # plt.xlim((-0.1,1.1))
-    # plt.ylim((-0.1,1.1))
-
+    plt.title('XOR of Input 1 and Input 2 and it\'s Annotated Label')
+    plt.xticks([0,1])
+    plt.yticks([0,1])
+    plt.show()
     plt.show()
 
 
@@ -66,14 +69,19 @@ def plot_loss(loss):
 def map_nn_output(y):
     return -2 * (y - 0.5)
 
+# -1 -> 1
+#  1 -> 0
+def map_nn_input(y):
+    return (-0.5 * y + 0.5).astype('int')
+
 
 class neural_net:
     def __init__(self, x, y):
         self.input = x
-        self.num_hidden_layer_perceptrons = 2
+        self.num_hidden_layer_perceptrons = 3
         # random returns random values between 0 and 1 in a given shape
         self.w1 = np.random.rand(self.input.shape[1],self.num_hidden_layer_perceptrons) 
-        self.w2 = np.random.rand(self.num_hidden_layer_perceptrons,1)               
+        self.w2 = np.random.rand(self.num_hidden_layer_perceptrons,1)     
         self.y = y
         self.output = np.zeros(self.y.shape)
 
@@ -83,6 +91,7 @@ class neural_net:
         self.hidden_layer = sigmoid(self.in_h_layer)
         self.in_output = np.dot(self.hidden_layer, self.w2)
         self.output = sigmoid(self.in_output)
+        return np.round(self.output)
 
     def back_prop(self, alpha):
         delta_0 = (self.output - self.y) * sigmoid_derivative(self.in_output)
@@ -102,6 +111,20 @@ class neural_net:
     def loss(self):
         return loss(self.output, self.y)
 
+def generate_noise(x, y, sigma):
+    x_noisy = []
+    y_new = []
+    for i in range(x.shape[0]):
+        mu = x[i].reshape(-1,)
+        cov = np.array([[sigma, 0],[0, sigma]])
+        x_noisy.append(np.random.multivariate_normal(mu,cov, 3))
+        y_new.append(y[i])
+        y_new.append(y[i])
+        y_new.append(y[i])
+
+
+    return np.array(x_noisy).reshape(-1,2), np.array(y_new)
+
 
 def run_neural_net():
     # define neural net inputs
@@ -109,15 +132,27 @@ def run_neural_net():
                   [0,0],
                   [1,0],
                   [0,1]])
+    y = np.array([[1],[1],[-1],[-1]])
+    visualize_samples(x,y)
+    y = map_nn_input(y)
+    print(y)
+    # generate noise
+    x_noisy, y_new = generate_noise(x, y, 0.5)
+    print(x_noisy.shape)
+    print(y_new.shape)
+    # print(x_noisy)
 
-    y = np.array([[0],[0],[1],[1]])
+
+
     # define neural net
-    nn = neural_net(x,y)
+    nn = neural_net(x, y)
     # define neural net training inputs
     num_iter = 100000
     alpha = 1
     # train the net
     nn.train(num_iter, alpha)
+    print(nn.w1)
+    print(nn.w2)
     # map outputs from 0 -> 1 and 1 -> -1
     y_pred = map_nn_output(nn.output)
     # print predictions
