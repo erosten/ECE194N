@@ -78,7 +78,7 @@ def map_nn_input(y):
 class neural_net:
     def __init__(self, x, y):
         self.input = x
-        self.num_hidden_layer_perceptrons = 3
+        self.num_hidden_layer_perceptrons = 20
         # random returns random values between 0 and 1 in a given shape
         self.w1 = np.random.rand(self.input.shape[1],self.num_hidden_layer_perceptrons) 
         self.w2 = np.random.rand(self.num_hidden_layer_perceptrons,1)     
@@ -101,29 +101,37 @@ class neural_net:
         self.w1 -= alpha * d_w1
         self.w2 -= alpha * d_w2
 
-    def train(self, num_iter, alpha):
+    def generate_noise(self, x, sigma):
+        x_noisy = []
+        for i in range(x.shape[0]):
+            mu = x[i].reshape(-1,)
+            cov = np.array([[sigma, 0],[0, sigma]])
+            x_noisy.append(np.random.multivariate_normal(mu,cov))
+
+        return np.array(x_noisy).reshape(-1,2)
+
+    def train(self, num_iter, alpha, x, useNoise, sigma):
         self.loss = np.zeros(num_iter)
         for i in range(num_iter):
-            self.forward_pass()
-            self.back_prop(alpha)
+            if (useNoise == True):
+                self.forward_pass(self.generate_noise(x, sigma))
+            else:
+                self.forward_pass(x)
+            if (i > 40000):
+                self.back_prop(alpha / 10000)  
+            elif (i > 30000):
+                self.back_prop(alpha / 1000)
+            elif (i > 20000):
+                self.back_prop(alpha / 100)
+            elif (i > 10000):
+                self.back_prop(alpha / 10)
+            else:
+                self.back_prop(alpha)
             self.loss[i] = loss(self.output,self.y)
 
     def loss(self):
         return loss(self.output, self.y)
 
-def generate_noise(x, y, sigma):
-    x_noisy = []
-    y_new = []
-    for i in range(x.shape[0]):
-        mu = x[i].reshape(-1,)
-        cov = np.array([[sigma, 0],[0, sigma]])
-        x_noisy.append(np.random.multivariate_normal(mu,cov, 3))
-        y_new.append(y[i])
-        y_new.append(y[i])
-        y_new.append(y[i])
-
-
-    return np.array(x_noisy).reshape(-1,2), np.array(y_new)
 
 
 def run_neural_net():
@@ -135,14 +143,8 @@ def run_neural_net():
     y = np.array([[1],[1],[-1],[-1]])
     visualize_samples(x,y)
     y = map_nn_input(y)
-    print(y)
     # generate noise
-    x_noisy, y_new = generate_noise(x, y, 0.5)
-    print(x_noisy.shape)
-    print(y_new.shape)
-    # print(x_noisy)
-
-
+    # x_noisy, y_new = generate_noise(x, y, 1)
 
     # define neural net
     nn = neural_net(x, y)
@@ -150,13 +152,11 @@ def run_neural_net():
     num_iter = 100000
     alpha = 1
     # train the net
-    nn.train(num_iter, alpha)
-    print(nn.w1)
-    print(nn.w2)
+    nn.train(num_iter, alpha, x, True, 2)
     # map outputs from 0 -> 1 and 1 -> -1
     y_pred = map_nn_output(nn.output)
     # print predictions
-    print(y_pred)
+    # print(y_pred)
     # plot loss
     plot_loss(nn.loss)
     # visualize classification regions
