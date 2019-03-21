@@ -29,7 +29,7 @@ print(x_test.shape[0], 'test samples')
 y_train = keras.utils.to_categorical(y_train, num_classes)
 y_test = keras.utils.to_categorical(y_test, num_classes)
 
-# create modified VGG16
+# create modified VGG
 model = Sequential()
 #block 1
 model.add(Conv2D(64, (3, 3), padding='same',
